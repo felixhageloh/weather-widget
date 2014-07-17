@@ -1,4 +1,4 @@
-# A weather forcast widget
+# Weather Forcast Widget
 Made for [Übersicht](http://tracesof.net/uebersicht/)
 
 ![the widget in action]
