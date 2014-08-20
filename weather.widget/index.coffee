@@ -48,6 +48,7 @@ renderForecast: (data) ->
   """
 
 style: """
+  -webkit-font-smoothing: antialiased
   bottom: 20%
   left: 50%
   color: #fff
