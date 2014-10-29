@@ -11,11 +11,8 @@ location = json.loads(urllib2.urlopen("http://freegeoip.net/json/").read())
 city = location['city']
 region = location['region_code']
 
-# Setup the yql
+# Setup the yql, and url
 yql = "select%20*%20from%20weather.forecast%20where%20woeid%20in%20(select%20woeid%20from%20geo.places(1)%20where%20text='"+city+",%20"+region+"')"
-
 url = "https://query.yahooapis.com/v1/public/yql?q=%s&format=json"
 
-weather = urllib2.urlopen(url % (yql)).read()
-weather_data = json.loads(weather)
-print json.dumps(weather_data, indent=4, sort_keys=True)
+print urllib2.urlopen(url % (yql)).read()

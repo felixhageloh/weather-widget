@@ -19,33 +19,36 @@ render: (o) -> """
 """
 
 update: (output, domEl) ->
-
+  # Parse the JSON data
   data  = JSON.parse(output)
 
+  # Set some local variables to make things a bit easier
   location = data.query.results.channel.location
   weather = data.query.results.channel.item
-  date  = @getDate weather.condition.date
+  date  = new Date weather.condition.date
 
+  # Determine if it is day or night, so we can show the correct icon
   dayOrNight = @getDayOrNight data.query.results.channel
 
+  # Cache the element
   $domEl = $(domEl)
 
+  # Render the top icon and summary section
   $domEl.find('.region').text location.city + ', ' + location.region
-
   $domEl.find('.date').text @dayMapping[date.getDay()]
   $domEl.find('.temp').html """
     <span class='hi'>#{Math.round(weather.condition.temp)}°</span>
   """
-  #
   $domEl.find('.text').text weather.condition.text
   $domEl.find('.icon')[0].innerHTML = @getIcon(weather.condition.code, dayOrNight)
 
+  # Render the forecast section
   forecastEl = $domEl.find('.forecast').html('')
   for day in weather.forecast[0..4]
     forecastEl.append @renderForecast(day)
 
 renderForecast: (data) ->
-  date = @getDate data.date
+  date = new Date data.date
 
   """
     <div class='entry cf'>
@@ -132,10 +135,11 @@ dayMapping:
   6: 'Saturday'
 
 getDayOrNight: (data) ->
+  # Get the current time, so we can figure out if it's day or night
   now = new Date()
-
   today = (now.getMonth() + 1) + "/" + now.getDate() + "/" + now.getFullYear()
 
+  # Determine the sunrise time
   sunrise = data.astronomy.sunrise
 
   pos = sunrise.indexOf ':', 0
@@ -156,8 +160,10 @@ getDayOrNight: (data) ->
   sMinutes = String(minutes)
   temp = today + ' ' + sHours + ':' + sMinutes
 
+  # This is the time the sun came up
   start = new Date(temp)
 
+  # Determine the sun set time
   sunset = data.astronomy.sunset
 
   pos = sunset.indexOf ':',0
@@ -177,12 +183,13 @@ getDayOrNight: (data) ->
   sMinutes = String(minutes)
   temp = today + ' ' + sHours + ':' + sMinutes
 
+  # This is the time the sun came up
+  end = new Date(temp)
+
+  # Return either 'd' if the sun is still up, or 'n' if it is gone
   if now > start and now < end then 'd' else 'n'
 
 getIcon: (code, dayOrNight) ->
+  # Returns the image element from Yahoo with the proper image
   imageURL = "http://l.yimg.com/a/i/us/nws/weather/gr/#{code}#{dayOrNight}.png"
   '<img src="' + imageURL + '">'
-
-getDate: (today) ->
-  date  = new Date(today)
-  date
