@@ -1,130 +1,125 @@
-apiKey   = '<api-key>'        # put your forcast.io api key here
-location = '52.3833,-4.9000'  # enter your coordinates as LATITUDE,LONGITUDE here
+command: "python weather.widget/weather.py"
 
-exclude  = "minutely,hourly,alerts,flags"
-
-command: "curl -s 'https://api.forecast.io/forecast/#{apiKey}/#{location}?units=auto&exclude=#{exclude}'"
-
+# Update every 10 minutes
 refreshFrequency: 600000
 
 render: (o) -> """
-  <div class='today'>
-    <div class='date'></div>
+  <div class='today cf'>
     <div class='icon'></div>
-    <div class='temp'></div>
-    <div class='summary'></div>
+    <div class='summary'>
+      <div class='region'></div>
+      <div class='date'></div>
+      <div>
+        <div class='temp'></div>
+        <div class='text'></div>
+      </div>
+    </div>
   </div>
   <div class='forecast'></div>
 """
 
 update: (output, domEl) ->
+
   data  = JSON.parse(output)
-  today = data.daily.data[0]
-  date  = @getDate today.time
+
+  location = data.query.results.channel.location
+  weather = data.query.results.channel.item
+  date  = @getDate weather.condition.date
+
+  dayOrNight = @getDayOrNight data.query.results.channel
+
   $domEl = $(domEl)
+
+  $domEl.find('.region').text location.city + ', ' + location.region
 
   $domEl.find('.date').text @dayMapping[date.getDay()]
   $domEl.find('.temp').html """
-    <span class='hi'>#{Math.round(today.temperatureMax)}°</span> /
-    <span class='lo'>#{Math.round(today.temperatureMin)}°</span>
+    <span class='hi'>#{Math.round(weather.condition.temp)}°</span>
   """
-
-  $domEl.find('.summary').text today.summary
-  $domEl.find('.icon')[0].innerHTML = @getIcon(today)
+  #
+  $domEl.find('.text').text weather.condition.text
+  $domEl.find('.icon')[0].innerHTML = @getIcon(weather.condition.code, dayOrNight)
 
   forecastEl = $domEl.find('.forecast').html('')
-  for day in data.daily.data[1..5]
+  for day in weather.forecast[0..4]
     forecastEl.append @renderForecast(day)
 
 renderForecast: (data) ->
-  date = @getDate data.time
+  date = @getDate data.date
 
   """
-    <div class='entry'>
-      <div class='icon'>#{@getIcon data}</div>
-      <div class='temp'>#{Math.round(data.temperatureMax)}°</div>
-      <div class='day'>#{@dayMapping[date.getDay()][0..2]}</div>
+    <div class='entry cf'>
+      <div class='day'>#{@dayMapping[date.getDay()]}</div>
+      <div class='icon'>#{@getIcon(data.code, 'd')}</div>
+      <div class='high'><label>High:</label>#{Math.round(data.high)}°</div>
+      <div class='low'><label>Low:</label>#{Math.round(data.low)}°</div>
     </div>
   """
 
 style: """
-  bottom: 20%
-  left: 50%
+  top: 0px
+  left: 10px
   color: #fff
   font-family: Helvetica Neue
-  text-align: center
-  width: 340px
-  margin-left: -160px
 
-  @font-face
-    font-family Weather
-    src url(weather.widget/icons.svg) format('svg')
+  .cf:before, .cf:after
+    content: " "
+    display: table
+
+  .cf:after
+    clear: both;
+
+  img
+    max-width: 100%
 
   .today
-    display: inline-block
-    text-align: left
-    position: relative
-
-  .icon
-    font-family: Weather
-    font-size: 50px
-    line-height: 70px
-    position: absolute
-    left: 0
-    top: 0
-    vertical-align: middle
-
-  .temp, .date
-    padding-left: 90px
-
-  .date
-    font-size: 11px
-    margin-bottom: 5px
-
-  .temp
-    font-weight: 200
-    font-size: 32px
-
-    .hi
-      color: #fff
-
-    .lo
-      color: #fafafa
-
-  .summary
-    font-size: 14px
-    text-align: center
-    line-height: 1.5
-    color: #fff
-    margin-top: 20px
+    .icon
+      float: left
+      margin-bottom: -70px
+      margin-right: -70px
+      margin-top: 0px
+    .region
+      font-weight: 400
+      font-size: 32px
+    .date
+      font-weight: 200
+      font-size: 12px
+    .temp
+      display: inline-block
+      font-weight: 200
+      font-size: 32px
+    .text
+      display: inline-block
+    .summary
+      float: left
+      margin-top: 20px
 
   .forecast
-    margin-top: 15px
-    padding-top: 10px
-    border-top: 1px solid #fff
+    margin-top 20px
+    padding-top 20px
+    border-top 1px solid #fff
+    font-size: 0
+    width: 360px
 
-  .forecast .entry
-    display: inline-block
-    margin-right: 40px
-    text-align: center
+    .entry
+      display: inline-block
+      font-size: 10px
+      text-align: center
+      width: 20%
 
-    div
-      margin-top: 5px
+      label
+        display: inline-block
+        width: 40%
 
-    &:last-child
-      margin-right: 0;
+      img
+        margin-bottom: -15%
+        margin-left: 18%
+        margin-top: 5%
 
-    .temp
-      font-size: 12px
-      padding: 0
-
-    .icon
-      font-size: 15px
-      line-height: 20px
-      position: static
-
-    .day
-      font-size: 12px
+      .high
+        color: #fff
+      .low
+        color: #ccc
 """
 
 dayMapping:
@@ -136,34 +131,58 @@ dayMapping:
   5: 'Friday'
   6: 'Saturday'
 
-iconMapping:
-  "rain"                :"&#xf019;"
-  "snow"                :"&#xf01b;"
-  "fog"                 :"&#xf014;"
-  "cloudy"              :"&#xf013;"
-  "wind"                :"&#xf021;"
-  "clear-day"           :"&#xf00d;"
-  "mostly-clear-day"    :"&#xf00c;"
-  "partly-cloudy-day"   :"&#xf002;"
-  "clear-night"         :"&#xf02e;"
-  "partly-cloudy-night" :"&#xf031;"
-  "unknown"             :"&#xf03e;"
+getDayOrNight: (data) ->
+  now = new Date()
 
-getIcon: (data) ->
-  return @iconMapping['unknown'] unless data
-  if data.icon.indexOf('cloudy') > -1
-    if data.cloudCover < 0.25
-      @iconMapping["clear-day"]
-    else if data.cloudCover < 0.5
-      @iconMapping["mostly-clear-day"]
-    else if data.cloudCover < 0.75
-      @iconMapping["partly-cloudy-day"]
-    else
-      @iconMapping["cloudy"]
-  else
-    @iconMapping[data.icon]
+  today = (now.getMonth() + 1) + "/" + now.getDate() + "/" + now.getFullYear()
 
-getDate: (utcTime) ->
-  date  = new Date(0)
-  date.setUTCSeconds(utcTime)
+  sunrise = data.astronomy.sunrise
+
+  pos = sunrise.indexOf ':', 0
+
+  hours = sunrise.charAt pos-1
+  if (pos > 1) then hours = sunrise[0..1]
+
+  len = sunrise.length
+  AMPM = sunrise[len-2..len]
+
+  if (AMPM == 'pm') then hours = hours + 12
+
+  sHours = String(hours)
+
+  if (hours < 10) then sHours = '0' + sHours
+
+  minutes = sunrise[pos+1..pos+2]
+  sMinutes = String(minutes)
+  temp = today + ' ' + sHours + ':' + sMinutes
+
+  start = new Date(temp)
+
+  sunset = data.astronomy.sunset
+
+  pos = sunset.indexOf ':',0
+  hours = sunset.charAt pos-1
+
+  if (pos > 1) then hours = sunset[0..1]
+  len = sunrise.length
+  AMPM = sunset[len-2..len]
+
+  if (AMPM == 'pm') then hours = Number(hours) + 12
+
+  sHours = String(hours)
+
+  if (hours < 10) then sHours = '0' + sHours
+
+  minutes = sunset[pos+1..pos+2]
+  sMinutes = String(minutes)
+  temp = today + ' ' + sHours + ':' + sMinutes
+
+  if now > start and now < end then 'd' else 'n'
+
+getIcon: (code, dayOrNight) ->
+  imageURL = "http://l.yimg.com/a/i/us/nws/weather/gr/#{code}#{dayOrNight}.png"
+  '<img src="' + imageURL + '">'
+
+getDate: (today) ->
+  date  = new Date(today)
   date

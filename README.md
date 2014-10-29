@@ -1,16 +1,34 @@
-# Weather Forcast Widget
+# Übersicht Weather Widget
+
 Made for [Übersicht](http://tracesof.net/uebersicht/)
 
 ![the widget in action]
-(https://raw.githubusercontent.com/felixhageloh/weather-widget/master/screenshot.png)
+(https://raw.githubusercontent.com/nickroberts/dynamic-weather-widget/master/screenshot.png)
 
-## Notes
+This uses the [freegeoip.net](http://freegeoip.net/ "freegeoip.net") api to obtain your location, and the [Yahoo Weather api](https://developer.yahoo.com/weather// "Yahoo Weather api") to obtain the weatehr information.
 
-Replace \<api-key\> inside `index.coffee` with your own forecast.io api key. You can get yours here: https://developer.forecast.io. You also need to enter your lat/lon coordinates, which you can find using google maps for example.
+## Setup
 
+By default, this is dynamic, based on your location (via your current ip address).
+
+If you want to make this static, you will need to edit some configurations in the `weather.py` file.
+
+### Static Location
+
+You will need to do 3 things inside of the `weather.py` file:
+
+1. Uncomment out the section for the static location
+2. Comment out the dynamic section
+3. Replace `<city>` with your city, and `<region>` with your region (state)
+
+### Dynamic Location
+
+You will need to do 2 things inside of the `weather.py` file:
+
+1. Uncomment out the dynamic section
+2. Comment out the section for the static location
 
 ## Credits
 
-Icons by Erik Flowers
-
-http://erikflowers.github.io/weather-icons/
+Original widget by the Übersicht team:
+https://github.com/felixhageloh/weather-widget
