@@ -6,16 +6,23 @@ import json
 city = "Cupertino"
 region_code = "CA"
 
+# -----------------------------------
+# Dynamic Section
+# -----------------------------------
+
 # Try to get the location
 try:
 
-    # Comment the next 4 lines for static weather
     location = json.loads(urllib2.urlopen("http://freegeoip.net/json/").read())
     city = location['city']
     region = location['region_code']
 
 except:
     pass
+
+# -----------------------------------
+# /Dynamic Section
+# -----------------------------------
 
 try:
 
