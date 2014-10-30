@@ -2,6 +2,9 @@
 
 Made for [Übersicht](http://tracesof.net/uebersicht/)
 
+![In action]
+(https://raw.githubusercontent.com/nickroberts/weather-widget/master/screenshot.png)
+
 ## In Action
 
 ### Yahoo Icons
