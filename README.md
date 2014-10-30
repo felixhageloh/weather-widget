@@ -6,11 +6,11 @@ Made for [Übersicht](http://tracesof.net/uebersicht/)
 
 ### Yahoo Icons
 ![Yahoo Icons]
-(https://raw.githubusercontent.com/nickroberts/dynamic-weather-widget/master/yahooIcons.png)
+(https://raw.githubusercontent.com/nickroberts/weather-widget/master/yahooIcons.png)
 
 ### Original Icons
 ![Original Icons]
-(https://raw.githubusercontent.com/nickroberts/dynamic-weather-widget/master/originalIcons.png)
+(https://raw.githubusercontent.com/nickroberts/weather-widget/master/originalIcons.png)
 
 This uses the [freegeoip.net](http://freegeoip.net/ "freegeoip.net") api to obtain your location, and the [Yahoo Weather api](https://developer.yahoo.com/weather// "Yahoo Weather api") to obtain the weatehr information.
 
