@@ -10,20 +10,17 @@ By default, this is dynamic, based on your location (via your current ip address
 
 If you want to make this static, you will need to edit some configurations in the `weather.py` file.
 
+1. Replace `<city>` with your city, and `<region>` with your region (state)
+
+*You should always set the `city` and `region` in the `weather.py` file, as sometimes the geolocation doesn't work, or is down*
+
 ### Static Location
 
-You will need to do 3 things inside of the `weather.py` file:
-
-1. Uncomment out the section for the static location
-2. Comment out the dynamic section
-3. Replace `<city>` with your city, and `<region>` with your region (state)
+1. Comment out the dynamic section
 
 ### Dynamic Location
 
-You will need to do 2 things inside of the `weather.py` file:
-
 1. Uncomment out the dynamic section
-2. Comment out the section for the static location
 
 ## Credits
 
