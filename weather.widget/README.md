@@ -22,6 +22,14 @@ If you want to make this static, you will need to edit some configurations in th
 
 1. Uncomment out the dynamic section
 
+### Troubleshooting
+
+Sometimes there is an issue with the `urllib2` library requesting the url. If you receive an "HTTP version not supported" error (or any other one), you can use the python requests library:
+
+1. Install the [requests](http://python-requests.org) library: `pip install requests`.
+2. Comment out the `import urllib2`, along with the 2 lines where `urllib2.openurl` is used, also commenting out the top 2 exception handlers for `urllib2`.
+3. Uncomment the `import requests` line, along with the 2 spots it uses `requests.get`, and also the exception handler.
+
 ## Credits
 
 Original widget by the Übersicht team:
