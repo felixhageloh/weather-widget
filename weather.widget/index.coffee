@@ -1,92 +1,13 @@
-# The command that runs to get the locatin and weather info
-command: "python weather.widget/weather.py"
+options =
+  city  : "Cupertino"      # default city in case location detection fails
+  region: "CA"             # default region in case location detection fails
+  units : 'f'              # c for celcius. f for Fahrenheit
 
-# Update every 10 minutes
-refreshFrequency: 600000
+appearance:
+  iconSet     : 'original' # "original" for the original icons, or "yahoo" for the yahoo icons
+  showLocation: true       # set to true to show your current location in the widget
 
-render: (o) -> """
-  <div class='weather-widget'>
-    <div class='today cf'>
-      <div class='icon'></div>
-      <div class='summary'>
-        <div class='region'></div>
-        <div class='date'></div>
-        <div>
-          <div class='temp'></div>
-          <div class='text'></div>
-        </div>
-      </div>
-    </div>
-    <div class='forecast'></div>
-  </div>
-"""
-
-update: (output, domEl) ->
-  # Options
-  # Set "iconSet" to "original" for the original icons, or "yahoo" for the yahoo icons
-  # Set "showLocation" to true to show your current location in the widget
-  options = {
-    iconSet: 'yahoo'
-    showLocation: true
-  }
-
-  # Parse the JSON data
-  data  = JSON.parse(output)
-
-  # Cache the element
-  $domEl = $(domEl)
-
-  if data.query is 'ERROR'
-    $domEl.find('.weather-widget').html '<div class="error"><div>' +
-      'There was an error obtaining the weather.<br>' +
-      'Are you connected to the internet?</div>' +
-      '<div class="message">err: ' + data.message + '</div>'
-      '</div>'
-  else
-    # Set some local variables to make things a bit easier
-    location = data.query.results.channel.location
-    weather = data.query.results.channel.item
-    date  = new Date weather.condition.date
-
-    # Render the top icon and summary section
-    if options.showLocation
-      $domEl.find('.region').html location.city + ', ' + location.region
-      .addClass 'show'
-
-    $domEl.find('.date').text @dayMapping[date.getDay()]
-    $domEl.find('.temp').html """
-      <span class='hi'>#{Math.round(weather.condition.temp)}°</span>
-    """
-    $domEl.find('.text').text weather.condition.text
-
-    # Render the forecast section
-    forecastEl = $domEl.find('.forecast').html('')
-    for day in weather.forecast[0..4]
-      forecastEl.append @renderForecast(day, options.iconSet)
-
-    if options.iconSet is 'yahoo'
-      # Determine if it is day or night, so we can show the correct icon
-      dayOrNight = @getDayOrNight data.query.results.channel
-      $domEl.find('.icon')[0].innerHTML = @getYahooIcon(weather.condition.code, dayOrNight)
-      $domEl.find('.icon').addClass('yahoo')
-    else
-      $domEl.find('.icon')[0].innerHTML = @getIcon(weather.condition.code)
-
-renderForecast: (data, iconSet) ->
-  date = new Date data.date
-  if iconSet is 'yahoo'
-    icon = @getYahooIcon(data.code, 'd')
-  else
-    icon = @getIcon(data.code)
-
-  """
-    <div class='entry cf'>
-      <div class='day'>#{@dayMapping[date.getDay()]}</div>
-      <div class='icon'>#{icon}</div>
-      <div class='high'><label>High:</label>#{Math.round(data.high)}°</div>
-      <div class='low'><label>Low:</label>#{Math.round(data.low)}°</div>
-    </div>
-  """
+refreshFrequency: 600000   # Update every 10 minutes
 
 style: """
   top: 10px
@@ -126,7 +47,8 @@ style: """
 
   .today
     .icon
-      float: left
+      display: inline-block
+
       &.yahoo
         margin-top: 0px
         margin-bottom: -70px
@@ -184,6 +106,87 @@ style: """
         color: #ccc
 """
 
+# The command that runs to get the locatin and weather info
+command: "#{process.argv[0]} weather.widget/get-weather.js #{options.city} #{options.region} #{options.units}"
+
+render: (o)-> """
+  <div class='weather-widget'>
+    <div class='today cf'>
+      <div class='icon'></div>
+      <div class='summary'>
+        <div class='region'></div>
+        <div class='date'></div>
+        <div>
+          <div class='temp'></div>
+          <div class='text'></div>
+        </div>
+      </div>
+    </div>
+    <div class='forecast'></div>
+  </div>
+"""
+
+update: (output, domEl) ->
+  # Parse the JSON data
+  data  = JSON.parse(output)
+
+  # Cache the element
+  $domEl = $(domEl)
+
+  if data.error
+    $domEl.find('.weather-widget').html '<div class="error"><div>' +
+      'There was an error obtaining the weather.<br>' +
+      'Are you connected to the internet?</div>' +
+      '<div class="message">err: ' + data.error + '</div>'
+      '</div>'
+  else
+    # Set some local variables to make things a bit easier
+    channel  = data.query.results.weather.rss.channel
+    location = channel.location
+    weather  = channel.item
+    date     = new Date weather.condition.date
+
+    # Render the top icon and summary section
+    if @appearance.showLocation
+      $domEl.find('.region')
+        .text("#{location.city}, #{location.region}")
+        .addClass 'show'
+
+    $domEl.find('.date').text @dayMapping[date.getDay()]
+    $domEl.find('.temp').html """
+      <span class='hi'>#{Math.round(weather.condition.temp)}°</span>
+    """
+    $domEl.find('.text').text weather.condition.text
+
+    # Render the forecast section
+    forecastEl = $domEl.find('.forecast').html('')
+    for day in weather.forecast[0..4]
+      forecastEl.append @renderForecast(day, @appearance.iconSet)
+
+    if @appearance.iconSet is 'yahoo'
+      # Determine if it is day or night, so we can show the correct icon
+      dayOrNight = @getDayOrNight channel.astronomy
+      $domEl.find('.icon')[0].innerHTML = @getYahooIcon(weather.condition.code, dayOrNight)
+      $domEl.find('.icon').addClass('yahoo')
+    else
+      $domEl.find('.icon')[0].innerHTML = @getIcon(weather.condition.code)
+
+renderForecast: (data, iconSet) ->
+  date = new Date data.date
+  if iconSet is 'yahoo'
+    icon = @getYahooIcon(data.code, 'd')
+  else
+    icon = @getIcon(data.code)
+
+  """
+    <div class='entry cf'>
+      <div class='day'>#{@dayMapping[date.getDay()]}</div>
+      <div class='icon'>#{icon}</div>
+      <div class='high'><label>High:</label>#{Math.round(data.high)}°</div>
+      <div class='low'><label>Low:</label>#{Math.round(data.low)}°</div>
+    </div>
+  """
+
 dayMapping:
   0: 'Sunday'
   1: 'Monday'
@@ -193,60 +196,46 @@ dayMapping:
   5: 'Friday'
   6: 'Saturday'
 
+# Return either 'd' if the sun is still up, or 'n' if it is gone
 getDayOrNight: (data) ->
-  # Get the current time, so we can figure out if it's day or night
-  now = new Date()
-  today = (now.getMonth() + 1) + "/" + now.getDate() + "/" + now.getFullYear()
+  now     = new Date()
+  sunrise = @parseTime data.sunrise
+  sunrise = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    sunrise.hour,
+    sunrise.minute
+  ).getTime()
 
-  # Determine the sunrise time
-  sunrise = data.astronomy.sunrise
+  sunset  = @parseTime data.sunset
+  sunset  = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    sunset.hour,
+    sunset.minute
+  ).getTime()
 
-  pos = sunrise.indexOf ':', 0
+  now = now.getTime()
 
-  hours = sunrise.charAt pos-1
-  if (pos > 1) then hours = sunrise[0..1]
+  if now > sunrise and now < sunset then 'd' else 'n'
 
-  len = sunrise.length
-  AMPM = sunrise[len-2..len]
+# parses a time string in US format: hh:mm am|pm
+parseTime: (usTimeString) ->
+  parts = usTimeString.match(/(\d+):(\d+) (\w+)/)
 
-  if (AMPM == 'pm') then hours = hours + 12
+  hour   = Number(parts[1])
+  minute = Number(parts[2])
+  am_pm  = parts[3].toLowerCase()
 
-  sHours = String(hours)
+  hour += 12 if am_pm == 'pm'
 
-  if (hours < 10) then sHours = '0' + sHours
+  hour: hour, minute: minute
 
-  minutes = sunrise[pos+1..pos+2]
-  sMinutes = String(minutes)
-  temp = today + ' ' + sHours + ':' + sMinutes
-
-  # This is the time the sun came up
-  start = new Date(temp)
-
-  # Determine the sun set time
-  sunset = data.astronomy.sunset
-
-  pos = sunset.indexOf ':',0
-  hours = sunset.charAt pos-1
-
-  if (pos > 1) then hours = sunset[0..1]
-  len = sunrise.length
-  AMPM = sunset[len-2..len]
-
-  if (AMPM == 'pm') then hours = Number(hours) + 12
-
-  sHours = String(hours)
-
-  if (hours < 10) then sHours = '0' + sHours
-
-  minutes = sunset[pos+1..pos+2]
-  sMinutes = String(minutes)
-  temp = today + ' ' + sHours + ':' + sMinutes
-
-  # This is the time the sun came up
-  end = new Date(temp)
-
-  # Return either 'd' if the sun is still up, or 'n' if it is gone
-  if now > start and now < end then 'd' else 'n'
+getIcon: (code) ->
+  return @iconMapping['unknown'] unless code
+  @iconMapping[code]
 
 getYahooIcon: (code, dayOrNight) ->
   # Returns the image element from Yahoo with the proper image
@@ -304,6 +293,4 @@ iconMapping:
   47   : "&#xf019;" # isolated thundershowers
   3200 : "&#xf00c;" # not available
 
-getIcon: (code) ->
-  return @iconMapping['unknown'] unless code
-  @iconMapping[code]
+
