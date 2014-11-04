@@ -28,22 +28,24 @@ style: """
     display: inline-block
     font-family: Weather
     vertical-align: top
-    overflow: hidden
     font-size: 80px
     max-height: 110px
-    max-width: 110px
+    max-width: 116px
+    vertical-align: middle
 
     img
-      width: 140%
-      margin-top: 16px
+      width: 160%
 
   .today
     font-size: 12px
     display: inline-block
-    vertical-align: bottom
+    vertical-align: middle
     line-height: 1
     margin-left: 24px
     text-align: left
+
+    p
+      margin: 0 0 12px 0
 
     span
       display: inline-block
@@ -65,8 +67,7 @@ style: """
       font-size: 16px
 
   .forecast
-    margin-top 12px
-    padding-top 16px
+    padding-top 20px
     border-top 1px solid #{appearance.darkerColor}
     font-size: 0
     line-height: 1
@@ -81,6 +82,7 @@ style: """
 
       img
         margin-top: 6px
+        width: 140%
 
     .entry
       display: inline-block
@@ -107,12 +109,12 @@ style: """
 """
 
 # The command that runs to get the locatin and weather info
-command: "#{process.argv[0]} weather.widget/get-weather.js #{options.city} #{options.region} #{options.units}"
+command: "#{process.argv[0]} weather.widget/get-weather #{options.city} #{options.region} #{options.units}"
 
 appearance: appearance
 
 render: (o)-> """
-  <div class='weather-widget'>
+  <div class='weather-widget #{@appearance.iconSet}'>
     <div class='icon'></div>
     <div class='today'>
       <p>
@@ -148,29 +150,26 @@ update: (output, domEl) ->
       .text("#{location.city}, #{location.region}")
       .addClass 'show'
 
+  forecastEl = $domEl.find('.forecast')
+
+  forecastEl.html('')
   $domEl.find('.date').html @dayMapping[date.getDay()]
-  $domEl.find('.temp').html """
-    <span class='hi'>#{Math.round(weather.condition.temp)}°</span>
-  """
+  $domEl.find('.temp').text "#{Math.round(weather.condition.temp)}°"
   $domEl.find('.text').text weather.condition.text
+  $domEl.find('.icon').html @getIcon(
+    weather.condition.code,
+    @appearance.iconSet,
+    @getDayOrNight channel.astronomy
+  )
 
   # Render the forecast section
-  forecastEl = $domEl.find('.forecast').html('')
   for day in weather.forecast[0..4]
     forecastEl.append @renderForecast(day, @appearance.iconSet)
 
-  if @appearance.iconSet is 'yahoo'
-    dayOrNight = @getDayOrNight channel.astronomy
-    $domEl.find('.icon').html @getYahooIcon(weather.condition.code, dayOrNight)
-  else
-    $domEl.find('.icon').html @getIcon(weather.condition.code)
 
 renderForecast: (data, iconSet) ->
   date = new Date data.date
-  if iconSet is 'yahoo'
-    icon = @getYahooIcon(data.code, 'd')
-  else
-    icon = @getIcon(data.code)
+  icon = @getIcon(data.code, iconSet, 'd')
 
   """
     <div class='entry'>
@@ -238,7 +237,13 @@ parseTime: (usTimeString) ->
 
   hour: hour, minute: minute
 
-getIcon: (code) ->
+getIcon: (code, iconSet, dayOrNight) ->
+  if iconSet is 'yahoo'
+    @getYahooIcon(code, dayOrNight)
+  else
+    @getOriginalIcon(code)
+
+getOriginalIcon: (code) ->
   return @iconMapping['unknown'] unless code
   @iconMapping[code]
 
