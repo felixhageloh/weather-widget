@@ -13,20 +13,26 @@ var options = {
 };
 
 var request = getLocation(function (location) {
-  options.region = location.region_name;
-  options.city   = location.city;
-
+  if (location.city) {
+    options.region = location.region_name;
+    options.city   = location.city;
+  }
   getWeather(options, function (data) {
-    console.log(data);
+    printResults(data);
   });
 });
 
 // use defaults
 request.on('error', function () {
   getWeather(options, function (data) {
-    console.log(data);
+    printResults(data);
   });
 });
+
+function printResults (data) {
+  data.location = options.city +', '+ options.region;
+  console.log(JSON.stringify(data));
+}
 
 function getLocation(callback) {
   return getJSON("http://freegeoip.net/json/", callback);
@@ -42,7 +48,7 @@ function getWeather (options, callback) {
   };
 
   var request = getJSON(url, params, function (data) {
-    callback(JSON.stringify(data));
+    callback(data);
   });
 
   request.on('error', function (e) {
@@ -62,11 +68,17 @@ function getJSON(url, params, callback) {
   if (querystring)
     url = url+'?'+querystring;
 
-  var json = "";
+  var json = "", result;
   return protocol.get(url, function (res) {
     res.on('data', function(chunk) { json += chunk; });
     res.on('end',  function() {
-      callback(JSON.parse(json));
+      try {
+        result = JSON.parse(json);
+      } catch (e) {
+        result = { error: e.message };
+      }
+
+      callback(result);
     });
   });
 }
