@@ -12,52 +12,50 @@ appearance =
 refreshFrequency: 600000   # Update every 10 minutes
 
 style: """
+  icon-size = 120px
+
   top : 20px
   left: 10px
+  width: 360px
 
   font-family: Helvetica Neue
   color: #{appearance.color}
-  line-height: 110px
   text-align: center
 
   @font-face
     font-family Weather
     src url(weather.widget/icons.svg) format('svg')
 
+  .current
+    line-height: 120px
+    position: relative
+    display: inline-block
+    white-space: nowrap
+    text-align: left
+
   .icon
     display: inline-block
     font-family: Weather
     vertical-align: top
     font-size: 80px
-    max-height: 110px
-    max-width: 116px
+    max-height: icon-size
     vertical-align: middle
+    text-align: center
+    width: icon-size * 1.2
+    max-width: icon-size * 1.2
 
     img
-      width: 160%
+      width: 100%
 
-  .today
-    font-size: 12px
+  .yahoo .icon
+    width: icon-size * 1.6
+    max-width: icon-size * 1.6
+
+  .details
     display: inline-block
-    vertical-align: middle
+    vertical-align: bottom
     line-height: 1
-    margin-left: 24px
     text-align: left
-
-    p
-      margin: 0 0 12px 0
-
-    span
-      display: inline-block
-      margin-right: 4px
-
-    .date
-      font-weight: 200
-      color: #{appearance.darkerColor}
-      margin-left: 4px
-
-    .region
-      font-weight: 500
 
     .temp
       font-weight: 200
@@ -66,17 +64,35 @@ style: """
     .text
       font-size: 16px
 
+  .meta
+    font-size: 12px
+    margin: 16px 0 12px 0
+
+    .date
+      font-weight: 200
+      color: #{appearance.darkerColor}
+      margin-left: 4px
+
+    .location
+      font-weight: 500
+      margin-left: 4px
+
+  .yahoo .meta
+    left: icon-size * 1.6
+
+  .no-location .location
+    display: none
+
   .forecast
     padding-top 20px
     border-top 1px solid #{appearance.darkerColor}
     font-size: 0
     line-height: 1
-    width: 360px
 
     .icon
-      font-size: 24px
-      line-height: 44px
-      max-height: 44px
+      font-size: 22px
+      line-height: 48px
+      max-height: 48px
       max-width: 40px
       vertical-align: middle
 
@@ -101,73 +117,74 @@ style: """
         font-weight: 200
 
   .error
-    font-size: 14px
-    line-height: 1
-    .message
-      color: red
-      margin-top: 5px
+    position: absolute
+    top: 0
+    left: 0
+    right: 0
+    bottom: 0
+    font-size: 20px
+
+    p
+      font-size: 14px
 """
 
-# The command that runs to get the locatin and weather info
 command: "#{process.argv[0]} weather.widget/get-weather #{options.city} #{options.region} #{options.units}"
 
 appearance: appearance
 
-render: (o)-> """
-  <div class='weather-widget #{@appearance.iconSet}'>
+render: -> """
+  <div class='current #{@appearance.iconSet} #{ 'no-location' unless @appearance.showLocation }'>
     <div class='icon'></div>
-    <div class='today'>
-      <p>
+    <div class='details'>
+      <div class='today'>
         <span class='temp'></span>
         <span class='text'></span>
-      </p>
-      <p>
+      </div>
+      <div class='meta'>
         <span class='date'></span>
-        <span class='region'></span>
-      </p>
+        <span class='location'></span>
+      </div>
     </div>
-    <div class='forecast'></div>
   </div>
+  <div class='forecast'></div>
 """
 
 update: (output, domEl) ->
-  # Cache the element
-  $domEl = $(domEl)
+  @$domEl = $(domEl)
 
-  # Parse the JSON data
-  data  = JSON.parse(output)
-  return @renderError(data, $domEl) unless data.query?.results?
+  data    = JSON.parse(output)
+  channel = data.query?.results?.weather?.rss?.channel
+  return @renderError(data) unless channel
 
-  # Set some local variables to make things a bit easier
-  channel  = data.query.results.weather.rss.channel
-  location = channel.location
+  @renderCurrent channel
+  @renderForecast channel
+
+  @$domEl.find('.error').remove()
+  @$domEl.children().show()
+
+renderCurrent: (channel) ->
   weather  = channel.item
+  location = channel.location
   date     = new Date()
 
-  # Render the top icon and summary section
-  if @appearance.showLocation
-    $domEl.find('.region')
-      .text("#{location.city}, #{location.region}")
-      .addClass 'show'
-
-  forecastEl = $domEl.find('.forecast')
-
-  forecastEl.html('')
-  $domEl.find('.date').html @dayMapping[date.getDay()]
-  $domEl.find('.temp').text "#{Math.round(weather.condition.temp)}°"
-  $domEl.find('.text').text weather.condition.text
-  $domEl.find('.icon').html @getIcon(
+  el = @$domEl.find('.current')
+  el.find('.temp').text "#{Math.round(weather.condition.temp)}°"
+  el.find('.text').text weather.condition.text
+  el.find('.date').html @dayMapping[date.getDay()]
+  el.find('.location').html location.city+', '+location.region
+  el.find('.icon').html @getIcon(
     weather.condition.code,
     @appearance.iconSet,
     @getDayOrNight channel.astronomy
   )
 
-  # Render the forecast section
-  for day in weather.forecast[0..4]
-    forecastEl.append @renderForecast(day, @appearance.iconSet)
+renderForecast: (channel) ->
+  forecastEl = @$domEl.find('.forecast')
+  forecastEl.html ''
+  for day in channel.item.forecast[0..4]
+    forecastEl.append @renderForecastItem(day, @appearance.iconSet)
 
-
-renderForecast: (data, iconSet) ->
+renderForecastItem: (data, iconSet) ->
   date = new Date data.date
   icon = @getIcon(data.code, iconSet, 'd')
 
@@ -182,12 +199,14 @@ renderForecast: (data, iconSet) ->
     </div>
   """
 
-renderError: (data, $domEl) ->
-  $domEl.find('.weather-widget').html """
+renderError: (data) ->
+  console.error 'weather widget:', data.error
+  @$domEl.children().hide()
+
+  @$domEl.append """
     <div class="error">
       Could not retreive weather data for #{data.location}.
       <p>Are you connected to the internet?</p>
-      <div class="message">#{data.error ? ''}</div>
     <div>
   """
 
