@@ -21,7 +21,7 @@ getLocation(function (location) {
     options.city   = location.city;
   }
   getWeather(options, function (data) {
-    printResults(data);
+    printResults(data || {});
   });
 });
 
