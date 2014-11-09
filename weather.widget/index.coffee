@@ -1,30 +1,61 @@
 options =
-  city  : "Cupertino"      # default city in case location detection fails
-  region: "CA"             # default region in case location detection fails
-  units : 'c'              # c for celcius. f for Fahrenheit
+  city          : "Amsterdam"       # default city in case location detection fails
+  region        : "NL"              # default region in case location detection fails
+  units         : 'c'               # c for celcius. f for Fahrenheit
+  staticLocation: false             # set to true to disable autmatic location lookup
 
 appearance =
-  iconSet     : 'original' # "original" for the original icons, or "yahoo" for yahoo icons
-  color       : '#fff'
-  darkerColor : '#ccc'
-  showLocation: true       # set to true to show your current location in the widget
+  iconSet       : 'original'        # "original" for the original icons, or "yahoo" for yahoo icons
+  color         : '#fff'            # configure your colors here
+  darkerColor   : 'rgba(#fff, 0.8)'
+  showLocation  : true              # set to true to show your current location in the widget
 
-refreshFrequency: 600000   # Update every 10 minutes
+refreshFrequency: 600000            # Update every 10 minutes
 
 style: """
-  icon-size = 120px
-
-  top : 20px
-  left: 10px
+  top  : 10px
+  left : 10px
   width: 360px
 
   font-family: Helvetica Neue
-  color: #{appearance.color}
-  text-align: center
+  color      : #{appearance.color}
+  text-align : center
+
+  .current .temperature
+    font-size  : 42px
+    font-weight: 200
+
+  .current .text
+    font-size: 16px
+
+  .current .day
+    font-size  : 12px
+    font-weight: 200
+    color: #{appearance.darkerColor}
+
+  .current .location
+    font-size  : 12px
+    font-weight: 500
+    margin-left: 4px
+
+  .forecast .day
+    font-size: 10px
+
+  .forecast .temperatures
+    font-size: 10px
+
+  .forecast .temperatures .high
+    margin-right: 2px
+
+  .forecast .temperatures .low
+    color: #{appearance.darkerColor}
+    font-weight: 200
 
   @font-face
     font-family Weather
     src url(weather.widget/icons.svg) format('svg')
+
+  icon-size = 120px
 
   .current
     line-height: 120px
@@ -57,24 +88,10 @@ style: """
     line-height: 1
     text-align: left
 
-    .temp
-      font-weight: 200
-      font-size: 42px
-
-    .text
-      font-size: 16px
-
   .meta
-    font-size: 12px
     margin: 16px 0 12px 0
 
-    .date
-      font-weight: 200
-      color: #{appearance.darkerColor}
-      margin-left: 4px
-
-    .location
-      font-weight: 500
+    .day
       margin-left: 4px
 
   .yahoo .meta
@@ -91,8 +108,8 @@ style: """
 
     .icon
       font-size: 22px
-      line-height: 48px
-      max-height: 48px
+      line-height: 52px
+      max-height: 52px
       max-width: 40px
       vertical-align: middle
 
@@ -102,19 +119,12 @@ style: """
 
     .entry
       display: inline-block
-      font-size: 10px
       text-align: center
       width: 20%
 
-      p
-        line-height: 14px
-        padding: 0
-        margin: 0
-        word-spacing: 2px
-
-      .low
-        color: #{appearance.darkerColor}
-        font-weight: 200
+    .temperatures
+      padding: 0
+      margin: 0
 
   .error
     position: absolute
@@ -128,7 +138,11 @@ style: """
       font-size: 14px
 """
 
-command: "#{process.argv[0]} weather.widget/get-weather #{options.city} #{options.region} #{options.units}"
+command: "#{process.argv[0]} weather.widget/get-weather \
+                            #{options.city} \
+                            #{options.region} \
+                            #{options.units} \
+                            #{'static' if options.staticLocation}"
 
 appearance: appearance
 
@@ -137,11 +151,11 @@ render: -> """
     <div class='icon'></div>
     <div class='details'>
       <div class='today'>
-        <span class='temp'></span>
+        <span class='temperature'></span>
         <span class='text'></span>
       </div>
       <div class='meta'>
-        <span class='date'></span>
+        <span class='day'></span>
         <span class='location'></span>
       </div>
     </div>
@@ -153,7 +167,7 @@ update: (output, domEl) ->
   @$domEl = $(domEl)
 
   data    = JSON.parse(output)
-  channel = data.query?.results?.weather?.rss?.channel
+  channel = data?.query?.results?.weather?.rss?.channel
   return @renderError(data) unless channel
 
   @renderCurrent channel
@@ -168,9 +182,9 @@ renderCurrent: (channel) ->
   date     = new Date()
 
   el = @$domEl.find('.current')
-  el.find('.temp').text "#{Math.round(weather.condition.temp)}°"
+  el.find('.temperature').text "#{Math.round(weather.condition.temp)}°"
   el.find('.text').text weather.condition.text
-  el.find('.date').html @dayMapping[date.getDay()]
+  el.find('.day').html @dayMapping[date.getDay()]
   el.find('.location').html location.city+', '+location.region
   el.find('.icon').html @getIcon(
     weather.condition.code,
@@ -192,7 +206,7 @@ renderForecastItem: (data, iconSet) ->
     <div class='entry'>
       <div class='day'>#{@dayMapping[date.getDay()]}</div>
       <div class='icon'>#{icon}</div>
-      <p>
+      <p class='temperatures'>
         <span class='high'>#{Math.round(data.high)}°</span>
         <span class='low'>#{Math.round(data.low)}°</span>
       </p>
@@ -200,7 +214,7 @@ renderForecastItem: (data, iconSet) ->
   """
 
 renderError: (data) ->
-  console.error 'weather widget:', data.error
+  console.error 'weather widget:', data.error if data?.error
   @$domEl.children().hide()
 
   @$domEl.append """
@@ -209,15 +223,6 @@ renderError: (data) ->
       <p>Are you connected to the internet?</p>
     <div>
   """
-
-dayMapping:
-  0: 'Sunday'
-  1: 'Monday'
-  2: 'Tuesday'
-  3: 'Wednesday'
-  4: 'Thursday'
-  5: 'Friday'
-  6: 'Saturday'
 
 # Return either 'd' if the sun is still up, or 'n' if it is gone
 getDayOrNight: (data) ->
@@ -270,6 +275,15 @@ getYahooIcon: (code, dayOrNight) ->
   # Returns the image element from Yahoo with the proper image
   imageURL = "http://l.yimg.com/a/i/us/nws/weather/gr/#{code}#{dayOrNight}.png"
   '<img src="' + imageURL + '">'
+
+dayMapping:
+  0: 'Sunday'
+  1: 'Monday'
+  2: 'Tuesday'
+  3: 'Wednesday'
+  4: 'Thursday'
+  5: 'Friday'
+  6: 'Saturday'
 
 iconMapping:
   0    : "&#xf021;" # tornado

@@ -2,35 +2,32 @@
 
 Made for [Übersicht](http://tracesof.net/uebersicht/)
 
-This uses the [freegeoip.net](http://freegeoip.net/ "freegeoip.net") api to obtain your location, and the [Yahoo Weather api](https://developer.yahoo.com/weather// "Yahoo Weather api") to obtain the weatehr information.
+Uses the [freegeoip.net](http://freegeoip.net/ "freegeoip.net") api to obtain your location, and the [Yahoo Weather api](https://developer.yahoo.com/weather// "Yahoo Weather api") to obtain the weather information.
 
-## Setup
+## Options
 
-By default, this is dynamic, based on your location (via your current ip address).
+You can find all options `index.coffee` at the top of the file:
 
-If you want to make this static, you will need to edit some configurations in the `weather.py` file.
+1. Default city and region. You can replace `<city>` with your city, and `<region>` with your region (state). This location is used in case the automatic location lookup fails, or if you switch off auto location (see below). Example:
 
-1. Replace `<city>` with your city, and `<region>` with your region (state)
+    ```
+    options =
+      city  : 'Cupertino'
+      region: 'CA'
+    ```
 
-*You should always set the `city` and `region` in the `weather.py` file, as sometimes the geolocation doesn't work, or is down*
+2. Temperature units. Use 'f' for Fahrenheit and 'c' for Celsius.
 
-### Static Location
+3. Automatic location lookup. Set `staticLocation` to `true` to disable auto location and instead always use the default city and region.
 
-1. Comment out the dynamic section
+## Appearance
 
-### Dynamic Location
-
-1. Uncomment out the dynamic section
-
-### Troubleshooting
-
-Sometimes there is an issue with the `urllib2` library requesting the url. If you receive an "HTTP version not supported" error (or any other one), you can use the python requests library:
-
-1. Install the [requests](http://python-requests.org) library: `pip install requests`.
-2. Comment out the `import urllib2`, along with the 2 lines where `urllib2.openurl` is used, also commenting out the top 2 exception handlers for `urllib2`.
-3. Uncomment the `import requests` line, along with the 2 spots it uses `requests.get`, and also the exception handler.
+To tweak the appearance, just follow the directions inside `index.coffee`. You can switch between the original minimal icons by Erik Flowers, or use the standard Yahoo icons.
 
 ## Credits
 
-Original widget by the Übersicht team:
-https://github.com/felixhageloh/weather-widget
+Automatic location detection and switch to Yahoo api by @nickroberts
+https://github.com/nickroberts
+
+Original icons by Erik Flowers
+http://erikflowers.github.io/weather-icons/

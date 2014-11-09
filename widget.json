@@ -1,5 +1,5 @@
 {
   "name": "Weather",
-  "description": "A simple weather forcast widget. NOTE: You will need your own forecast.io api key. Please check the README for details.",
+  "description": "A simple weather forcast widget. UPDATE: Automatic location and no more API keys!",
   "author": "Felix Hageloh"
 }
