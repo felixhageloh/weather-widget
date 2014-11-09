@@ -28,8 +28,12 @@ getLocation(function (location) {
 function getLocation(callback) {
   if (options.static) return callback({});
 
-  getJSON("http://freegeoip.net/json/", callback)
-    .on('error', function () { callback({}) });
+  var request = getJSON("http://freegeoip.net/json/", callback);
+
+  request.on('error', function () { callback({}) });
+  setTimeout(function () {
+    request.abort();
+  }, 3000);
 }
 
 function printResults (data) {
