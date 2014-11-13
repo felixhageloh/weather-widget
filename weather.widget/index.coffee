@@ -1,8 +1,8 @@
 options =
-  city          : "Amsterdam"       # default city in case location detection fails
-  region        : "NH"              # default region in case location detection fails
+  city          : "Monroeton"       # default city in case location detection fails
+  region        : "PA"              # default region in case location detection fails
   units         : 'c'               # c for celcius. f for Fahrenheit
-  staticLocation: false             # set to true to disable autmatic location lookup
+  staticLocation: true             # set to true to disable autmatic location lookup
 
 appearance =
   iconSet       : 'original'        # "original" for the original icons, or "yahoo" for yahoo icons
