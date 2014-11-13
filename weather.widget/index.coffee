@@ -1,6 +1,6 @@
 options =
   city          : "Amsterdam"       # default city in case location detection fails
-  region        : "NL"              # default region in case location detection fails
+  region        : "NH"              # default region in case location detection fails
   units         : 'c'               # c for celcius. f for Fahrenheit
   staticLocation: false             # set to true to disable autmatic location lookup
 
@@ -139,8 +139,8 @@ style: """
 """
 
 command: "#{process.argv[0]} weather.widget/get-weather \
-                            #{options.city} \
-                            #{options.region} \
+                            \"#{options.city}\" \
+                            \"#{options.region}\" \
                             #{options.units} \
                             #{'static' if options.staticLocation}"
 
@@ -169,6 +169,9 @@ update: (output, domEl) ->
   data    = JSON.parse(output)
   channel = data?.query?.results?.weather?.rss?.channel
   return @renderError(data) unless channel
+
+  if channel.title == "Yahoo! Weather - Error"
+    return @renderError(data, channel.item?.title)
 
   @renderCurrent channel
   @renderForecast channel
@@ -213,16 +216,17 @@ renderForecastItem: (data, iconSet) ->
     </div>
   """
 
-renderError: (data) ->
+renderError: (data, message) ->
   console.error 'weather widget:', data.error if data?.error
   @$domEl.children().hide()
 
-  @$domEl.append """
-    <div class="error">
-      Could not retreive weather data for #{data.location}.
+  message ?= """
+     Could not retreive weather data for #{data.location}.
       <p>Are you connected to the internet?</p>
-    <div>
   """
+
+  @$domEl.append "<div class=\"error\">#{message}<div>"
+
 
 # Return either 'd' if the sun is still up, or 'n' if it is gone
 getDayOrNight: (data) ->

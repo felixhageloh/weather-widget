@@ -87,6 +87,9 @@ function getJSON(url, params, callback) {
 }
 
 function yqlQuery(city, region, unit) {
+  city   = city.replace(/\s+/g, '-');
+  region = region.replace(/\s+/g, '-');
+
   return "select * from weather.bylocation " +
     "where location='"+city+", "+region+"' and unit='"+unit+"'";
 }
