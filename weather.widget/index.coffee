@@ -8,41 +8,46 @@ appearance =
   iconSet       : 'original'        # "original" for the original icons, or "yahoo" for yahoo icons
   color         : '#fff'            # configure your colors here
   darkerColor   : 'rgba(#fff, 0.8)'
+  baseFontSize  : 42                # the base font size, the size of the temperature
   showLocation  : true              # set to true to show your current location in the widget
+  showDay       : true              # set to true to show the current day of the week
+  showWeatherText: true             # set to true to show the text label for the weather
+  showForecast  : true              # set to true to show the 5 day forecast
 
 refreshFrequency: 600000            # Update every 10 minutes
 
 style: """
   top  : 10px
   left : 10px
-  width: 360px
+  width: #{appearance.baseFontSize * 8.57}px
 
   font-family: Helvetica Neue
   color      : #{appearance.color}
   text-align : center
 
   .current .temperature
-    font-size  : 42px
+    font-size  : #{appearance.baseFontSize}px
     font-weight: 200
 
   .current .text
-    font-size: 16px
+    font-size: #{appearance.baseFontSize * .38}px
 
   .current .day
-    font-size  : 12px
+    font-size  : #{appearance.baseFontSize * .25}px
     font-weight: 200
     color: #{appearance.darkerColor}
 
   .current .location
-    font-size  : 12px
+    font-size  : #{appearance.baseFontSize * .25}px
     font-weight: 500
     margin-left: 4px
 
   .forecast .day
-    font-size: 10px
+    font-size: #{appearance.baseFontSize * .24}px
 
   .forecast .temperatures
     font-size: 10px
+    font-size  : #{appearance.baseFontSize * .24}px
 
   .forecast .temperatures .high
     margin-right: 2px
@@ -55,10 +60,10 @@ style: """
     font-family Weather
     src url(weather.widget/icons.svg) format('svg')
 
-  icon-size = 120px
+  icon-size = #{appearance.baseFontSize * 2.86}px
 
   .current
-    line-height: 120px
+    line-height: #{appearance.baseFontSize * 2.86}px
     position: relative
     display: inline-block
     white-space: nowrap
@@ -68,7 +73,7 @@ style: """
     display: inline-block
     font-family: Weather
     vertical-align: top
-    font-size: 80px
+    font-size: #{appearance.baseFontSize * 1.9}px
     max-height: icon-size
     vertical-align: middle
     text-align: center
@@ -98,6 +103,12 @@ style: """
     left: icon-size * 1.6
 
   .no-location .location
+    visibility: hidden
+
+  .no-day .day
+    display: none
+
+  .no-weather-text .text
     display: none
 
   .forecast
@@ -107,10 +118,10 @@ style: """
     line-height: 1
 
     .icon
-      font-size: 22px
-      line-height: 52px
-      max-height: 52px
-      max-width: 40px
+      font-size: #{appearance.baseFontSize * .52}px
+      line-height: #{appearance.baseFontSize * 1.24}px
+      max-height: #{appearance.baseFontSize * 1.24}px
+      max-width: #{appearance.baseFontSize * .95}px
       vertical-align: middle
 
       img
@@ -135,7 +146,7 @@ style: """
     font-size: 20px
 
     p
-      font-size: 14px
+      font-size: #{appearance.baseFontSize * .33}px
 """
 
 command: "#{process.argv[0]} weather.widget/get-weather \
@@ -147,7 +158,11 @@ command: "#{process.argv[0]} weather.widget/get-weather \
 appearance: appearance
 
 render: -> """
-  <div class='current #{@appearance.iconSet} #{ 'no-location' unless @appearance.showLocation }'>
+  <div class='current #{@appearance.iconSet}
+              #{ 'no-location' unless @appearance.showLocation }
+              #{ 'no-day' unless @appearance.showDay }
+              #{ 'no-weather-text' unless @appearance.showWeatherText }
+  '>
     <div class='icon'></div>
     <div class='details'>
       <div class='today'>
@@ -160,7 +175,7 @@ render: -> """
       </div>
     </div>
   </div>
-  <div class='forecast'></div>
+  <div class="forecast" #{ 'style="display:none; border-top: 0"' unless @appearance.showForecast }></div>
 """
 
 update: (output, domEl) ->
@@ -174,7 +189,7 @@ update: (output, domEl) ->
     return @renderError(data, channel.item?.title)
 
   @renderCurrent channel
-  @renderForecast channel
+  @renderForecast channel if @appearance.showForecast
 
   @$domEl.find('.error').remove()
   @$domEl.children().show()
@@ -186,9 +201,9 @@ renderCurrent: (channel) ->
 
   el = @$domEl.find('.current')
   el.find('.temperature').text "#{Math.round(weather.condition.temp)}°"
-  el.find('.text').text weather.condition.text
-  el.find('.day').html @dayMapping[date.getDay()]
-  el.find('.location').html location.city+', '+location.region
+  el.find('.text').text weather.condition.text if @appearance.showWeatherText
+  el.find('.day').html @dayMapping[date.getDay()] if @appearance.showDay
+  el.find('.location').html location.city+', '+location.region if @appearance.showLocation
   el.find('.icon').html @getIcon(
     weather.condition.code,
     @appearance.iconSet,
@@ -226,7 +241,6 @@ renderError: (data, message) ->
   """
 
   @$domEl.append "<div class=\"error\">#{message}<div>"
-
 
 # Return either 'd' if the sun is still up, or 'n' if it is gone
 getDayOrNight: (data) ->
