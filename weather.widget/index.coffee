@@ -278,10 +278,10 @@ getOriginalIcon: (code) ->
 getYahooIcon: (code, dayOrNight) ->
   # Returns the image element from Yahoo with the proper image
   if code == '3200'
-    ''
-  else
-    imageURL = "http://l.yimg.com/a/i/us/nws/weather/gr/#{code}#{dayOrNight}.png"
-    '<img src="' + imageURL + '">'
+    # code 3200 translates to Yahoo's 44th weatherimage, an "NA"
+    code = 44
+  imageURL = "http://l.yimg.com/a/i/us/nws/weather/gr/#{code}#{dayOrNight}.png"
+  '<img src="' + imageURL + '">'
 
 dayMapping:
   0: 'Sunday'
