@@ -182,7 +182,7 @@ update: (output, domEl) ->
   @$domEl = $(domEl)
 
   data    = JSON.parse(output)
-  channel = data?.query?.results?.weather?.rss?.channel
+  channel = data?.query?.results?.channel
   return @renderError(data) unless channel
 
   if channel.title == "Yahoo! Weather - Error"
