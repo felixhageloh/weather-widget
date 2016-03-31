@@ -2,7 +2,7 @@
 
 Made for [Übersicht](http://tracesof.net/uebersicht/)
 
-Uses the [freegeoip.net](http://freegeoip.net/ "freegeoip.net") api to obtain your location, and the [Yahoo Weather api](https://developer.yahoo.com/weather// "Yahoo Weather api") to obtain the weather information.
+Uses the [ip-api.com](http://ip-api.com/ "ip-api.com") api to obtain your location, and the [Yahoo Weather api](https://developer.yahoo.com/weather// "Yahoo Weather api") to obtain the weather information.
 
 ## Options
 
