@@ -17,7 +17,7 @@ var options = {
 
 getLocation(function (location) {
   if (location.city) {
-    options.region = location.region_name;
+    options.region = location.region;
     options.city   = location.city;
   }
   getWeather(options, function (data) {
@@ -28,7 +28,7 @@ getLocation(function (location) {
 function getLocation(callback) {
   if (options.static) return callback({});
 
-  var request = getJSON("http://freegeoip.net/json/", callback);
+  var request = getJSON("http://ip-api.com/json", callback);
 
   request.on('error', function () { callback({}) });
   setTimeout(function () {
