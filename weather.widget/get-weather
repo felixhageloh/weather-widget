@@ -1,96 +1,117 @@
 // usage:
-// node get-weather.js [city] [reagion] [units]
-
+// node get-weather.js [city] [region] [units]
 // avoid HTTPS errors
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
 
-var http  = require('http')
-  , https = require('https')
-  , query = require('querystring');
+var http = require('http'),
+    https = require('https'),
+    query = require('querystring');
 
 var options = {
-  city  : process.argv[2],
-  region: process.argv[3],
-  units : process.argv[4].toLowerCase(),
-  static: process.argv[5] === 'static'
+    city: process.argv[2],
+    region: process.argv[3],
+    units: process.argv[4].toLowerCase(),
+    static: process.argv[5] === 'static'
 };
 
-getLocation(function (location) {
-  if (location.city) {
-    options.region = location.region;
-    options.city   = location.city;
-  }
-  getWeather(options, function (data) {
-    printResults(data || {});
-  });
+var weatherRetryCounter = 0;
+
+getLocation(function(location) {
+    if (location.city) {
+        options.region = location.region;
+        options.city = location.city;
+    }
+    getWeather(options, function(data) {
+        retryGetWeatherOrPrintResults(data);
+    });
 });
 
 function getLocation(callback) {
-  if (options.static) return callback({});
+    if (options.static) return callback({});
 
-  var request = getJSON("http://ip-api.com/json", callback);
+    var request = getJSON("http://ip-api.com/json", callback);
 
-  request.on('error', function () { callback({}) });
-  setTimeout(function () {
-    request.abort();
-  }, 3000);
+    request.on('error', function() {
+        callback({})
+    });
+    setTimeout(function() {
+        request.abort();
+    }, 3000);
 }
 
-function printResults (data) {
-  data.location = options.city +', '+ options.region;
-  console.log(JSON.stringify(data));
+function printResults(data) {
+    data.location = options.city + ', ' + options.region;
+    console.log(JSON.stringify(data));
 }
 
-function getWeather (options, callback) {
-  var url = "https://query.yahooapis.com/v1/public/yql";
+function retryGetWeatherOrPrintResults(data) {
+    if (data.query.results == null && weatherRetryCounter < 5) {
+        weatherRetryCounter++;
+        getWeather(options, function(data) {
+            retryGetWeatherOrPrintResults(data);
+        });
+    } else {
+        printResults(data || {});
+    }
+}
 
-  var params = {
-    q     : yqlQuery(options.city, options.region, options.units),
-    env   : "store://datatables.org/alltableswithkeys",
-    format: 'json'
-  };
+function getWeather(options, callback) {
+    var url = "https://query.yahooapis.com/v1/public/yql";
 
-  var request = getJSON(url, params, function (data) {
-    callback(data);
-  });
+    var params = {
+        q: yqlQuery(options.city, options.region, options.units),
+        env: "store://datatables.org/alltableswithkeys",
+        format: 'json'
+    };
 
-  request.on('error', function (e) {
-    callback({error: e.message});
-  });
+    var request = getJSON(url, params, function(data) {
+        callback(data);
+    });
+
+    request.on('error', function(e) {
+        callback({
+            error: e.message
+        });
+    });
 }
 
 function getJSON(url, params, callback) {
-  if (arguments.length == 2) {
-    callback = params;
-    params   = {};
-  }
+    if (arguments.length == 2) {
+        callback = params;
+        params = {};
+    }
 
-  var protocol    = /^https:/.test(url) ? https : http
-    , querystring = query.stringify(params);
+    var protocol = /^https:/.test(url) ? https : http,
+        querystring = query.stringify(params);
 
-  if (querystring)
-    url = url+'?'+querystring;
+    if (querystring)
+        url = url + '?' + querystring;
 
-  var json = "", result;
-  return protocol.get(url, function (res) {
-    res.on('data', function(chunk) { json += chunk; });
-    res.on('end',  function() {
-      try {
-        result = JSON.parse(json);
-      } catch (e) {
-        result = { error: e.message };
-      }
+    var json = "",
+        result;
 
-      callback(result);
+    return protocol.get(url, function(res) {
+        res.on('data', function(chunk) {
+            json += chunk;
+        });
+        res.on('end', function() {
+            try {
+                result = JSON.parse(json);
+            } catch (e) {
+                result = {
+                    error: e.message
+                };
+            }
+            callback(result);
+        });
     });
-  });
 }
 
 function yqlQuery(city, region, unit) {
-  city   = city.replace(/\s+/g, '-');
-  region = region.replace(/\s+/g, '-');
+    city = city.replace(/\s+/g, '-');
+    region = region.replace(/\s+/g, '-');
 
-  return "select * from weather.forecast where woeid in " +
-    "(select woeid from geo.places(1) where text='"+city+", "+region+"')" +
-    "and u='"+unit+"'";
+    return "select * from weather.forecast where woeid in " +
+        "(select woeid from geo.places(1) where text='" + city + ", " + region + "')" +
+        "and u='" + unit + "'";
 }
