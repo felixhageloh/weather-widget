@@ -1,7 +1,7 @@
 options =
-  city          : "Amsterdam"       # default city in case location detection fails
-  region        : "NH"              # default region in case location detection fails
-  units         : 'c'               # c for celcius. f for Fahrenheit
+  city          : "Troy"       # default city in case location detection fails
+  region        : "NY"              # default region in case location detection fails
+  units         : 'f'               # c for celcius. f for Fahrenheit
   staticLocation: false             # set to true to disable autmatic location lookup
 
 appearance =
@@ -18,7 +18,7 @@ refreshFrequency: 600000            # Update every 10 minutes
 
 style: """
   top  : 10px
-  left : 10px
+  right : 150px
   width: #{appearance.baseFontSize * 8.57}px
 
   font-family: Helvetica Neue
@@ -183,7 +183,14 @@ update: (output, domEl) ->
 
   data    = JSON.parse(output)
   channel = data?.query?.results?.channel
-  return @renderError(data) unless channel
+
+  if channel 
+    delete localStorage.cachedOutput
+    localStorage.setItem("cachedOutput", output)
+  else
+    data = JSON.parse(localStorage.getItem("cachedOutput"))
+    channel = data?.query?.results?.channel
+    return @renderError(data) unless channel
 
   if channel.title == "Yahoo! Weather - Error"
     return @renderError(data, channel.item?.title)
@@ -353,5 +360,3 @@ iconMapping:
   46   : "&#xf00c;" # snow showers
   47   : "&#xf019;" # isolated thundershowers
   3200 : "&#xf00c;" # not available
-
-
