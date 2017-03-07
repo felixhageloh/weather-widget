@@ -293,11 +293,14 @@ getIcon: (code, iconSet, dayOrNight) ->
     @getOriginalIcon(code)
 
 getOriginalIcon: (code) ->
-  return @iconMapping['unknown'] unless code
+  return @iconMapping['unknown'] unless code and code < 3200
   @iconMapping[code]
 
 getYahooIcon: (code, dayOrNight) ->
   # Returns the image element from Yahoo with the proper image
+  if code == '3200'
+    # code 3200 translates to Yahoo's 44th weatherimage, an "NA"
+    code = 44
   imageURL = "http://l.yimg.com/a/i/us/nws/weather/gr/#{code}#{dayOrNight}.png"
   '<img src="' + imageURL + '">'
 
