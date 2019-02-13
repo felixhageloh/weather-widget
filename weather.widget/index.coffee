@@ -1,8 +1,9 @@
 options =
   city          : "Troy"       # default city in case location detection fails
   region        : "NY"              # default region in case location detection fails
-  units         : 'f'               # c for celcius. f for Fahrenheit
-  staticLocation: false             # set to true to disable autmatic location lookup
+  units         : 'us'              # si for celcius. us for Fahrenheit
+  useLocation   : 'auto'            # set to 'static' to disable automatic location lookup
+  lang          : 'en'              # set language code for the current day summary
 
 appearance =
   iconSet       : 'original'        # "original" for the original icons, or "yahoo" for yahoo icons
@@ -149,11 +150,12 @@ style: """
       font-size: #{appearance.baseFontSize * .33}px
 """
 
-command: "$(ps -o comm= $PPID | sed -e 's/UM-LM\^H/Ü/') weather.widget/get-weather \
+command: "#{process.argv[0]} weather.widget/get-weather \
                             \"#{options.city}\" \
                             \"#{options.region}\" \
                             #{options.units} \
-                            #{'static' if options.staticLocation}"
+                            #{options.useLocation}
+                            #{options.lang}"
 
 appearance: appearance
 
@@ -181,18 +183,15 @@ render: -> """
 update: (output, domEl) ->
   @$domEl = $(domEl)
 
-  data    = JSON.parse(output)
-  channel = data?.query?.results?.channel
-
-  if channel 
+  channel = JSON.parse(output)
+  if channel
     delete localStorage.cachedOutput
     localStorage.setItem("cachedOutput", output)
   else
-    data = JSON.parse(localStorage.getItem("cachedOutput"))
-    channel = data?.query?.results?.channel
-    return @renderError(data) unless channel
+    channel = JSON.parse(localStorage.getItem("cachedOutput"))
+    return @renderError(channel, output) unless channel
 
-  if channel.title == "Yahoo! Weather - Error"
+  if channel.code  # Dark Sky returns error code like 400
     return @renderError(data, channel.item?.title)
 
   @renderCurrent channel
@@ -202,38 +201,37 @@ update: (output, domEl) ->
   @$domEl.children().show()
 
 renderCurrent: (channel) ->
-  weather  = channel.item
-  location = channel.location
+  weather  = channel.currently
   date     = new Date()
 
   el = @$domEl.find('.current')
-  el.find('.temperature').text "#{Math.round(weather.condition.temp)}°"
-  el.find('.text').text weather.condition.text if @appearance.showWeatherText
+  el.find('.temperature').text "#{Math.round(weather.temperature)}°"
+  el.find('.text').text weather.summary if @appearance.showWeatherText
   el.find('.day').html @dayMapping[date.getDay()] if @appearance.showDay
-  el.find('.location').html location.city+', '+location.region if @appearance.showLocation
+  @$domEl.find('.location').html channel.location if @appearance.showLocation
   el.find('.icon').html @getIcon(
-    weather.condition.code,
+    weather.icon,
     @appearance.iconSet,
-    @getDayOrNight channel.astronomy
+    @getDayOrNight channel.daily.data[0]
   )
 
 renderForecast: (channel) ->
   forecastEl = @$domEl.find('.forecast')
   forecastEl.html ''
-  for day in channel.item.forecast[0..4]
+  for day in channel.daily.data[0..4]
     forecastEl.append @renderForecastItem(day, @appearance.iconSet)
 
 renderForecastItem: (data, iconSet) ->
-  date = new Date data.date
-  icon = @getIcon(data.code, iconSet, 'd')
+  date = new Date(data.time*1000)
+  icon = @getIcon(data.icon, iconSet, 'd')
 
   """
     <div class='entry'>
       <div class='day'>#{@dayMapping[date.getDay()]}</div>
       <div class='icon'>#{icon}</div>
       <p class='temperatures'>
-        <span class='high'>#{Math.round(data.high)}°</span>
-        <span class='low'>#{Math.round(data.low)}°</span>
+        <span class='high'>#{Math.round(data.temperatureHigh)}°</span>
+        <span class='low'>#{Math.round(data.temperatureLow)}°</span>
       </p>
     </div>
   """
@@ -244,37 +242,20 @@ renderError: (data, message) ->
 
   message ?= """
      Could not retreive weather data for #{data.location}.
-      <p>Are you connected to the internet?</p>
+     <p>#{data.error}</p>
   """
 
   @$domEl.append "<div class=\"error\">#{message}<div>"
 
 # Return either 'd' if the sun is still up, or 'n' if it is gone
 getDayOrNight: (data) ->
-  now     = new Date()
-  sunrise = @parseTime data.sunrise
-  sunrise = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    sunrise.hour,
-    sunrise.minute
-  ).getTime()
-
-  sunset  = @parseTime data.sunset
-  sunset  = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    sunset.hour,
-    sunset.minute
-  ).getTime()
-
-  now = now.getTime()
+  sunrise = new Date(data.sunriseTime*1000).getTime()
+  sunset  = new Date(data.sunsetTime*1000).getTime()
+  now     = new Date().getTime()
 
   if now > sunrise and now < sunset then 'd' else 'n'
 
-# parses a time string in US format: hh:mm am|pm
+# parses a time in unix time
 parseTime: (usTimeString) ->
   parts = usTimeString.match(/(\d+):(\d+) (\w+)/)
 
@@ -311,52 +292,14 @@ dayMapping:
   6: 'Saturday'
 
 iconMapping:
-  0    : "&#xf021;" # tornado
-  1    : "&#xf021;" # tropical storm
-  2    : "&#xf021;" # hurricane
-  3    : "&#xf019;" # severe thunderstorms
-  4    : "&#xf019;" # thunderstorms
-  5    : "&#xf019;" # mixed rain and snow
-  6    : "&#xf019;" # mixed rain and sleet
-  7    : "&#xf019;" # mixed snow and sleet
-  8    : "&#xf019;" # freezing drizzle
-  9    : "&#xf019;" # drizzle
-  10   : "&#xf019;" # freezing rain
-  11   : "&#xf019;" # showers
-  12   : "&#xf019;" # showers
-  13   : "&#xf01b;" # snow flurries
-  14   : "&#xf01b;" # light snow showers
-  15   : "&#xf01b;" # blowing snow
-  16   : "&#xf01b;" # snow
-  17   : "&#xf019;" # hail
-  18   : "&#xf019;" # sleet
-  19   : "&#xf002;" # dust
-  20   : "&#xf014;" # foggy
-  21   : "&#xf014;" # haze
-  22   : "&#xf014;" # smoky
-  23   : "&#xf021;" # blustery
-  24   : "&#xf021;" # windy
-  25   : "&#xf021;" # cold
-  26   : "&#xf013;" # cloudy
-  27   : "&#xf031;" # mostly cloudy (night)
-  28   : "&#xf002;" # mostly cloudy (day)
-  29   : "&#xf031;" # partly cloudy (night)
-  30   : "&#xf002;" # partly cloudy (day)
-  31   : "&#xf02e;" # clear (night)
-  32   : "&#xf00d;" # sunny
-  33   : "&#xf031;" # fair (night)
-  34   : "&#xf00c;" # fair (day)
-  35   : "&#xf019;" # mixed rain and hail
-  36   : "&#xf00d;" # hot
-  37   : "&#xf019;" # isolated thunderstorms
-  38   : "&#xf019;" # scattered thunderstorms
-  39   : "&#xf019;" # scattered thunderstorms
-  40   : "&#xf019;" # scattered showers
-  41   : "&#xf01b;" # heavy snow
-  42   : "&#xf01b;" # scattered snow showers
-  43   : "&#xf01b;" # heavy snow
-  44   : "&#xf00c;" # partly cloudy
-  45   : "&#xf019;" # thundershowers
-  46   : "&#xf00c;" # snow showers
-  47   : "&#xf019;" # isolated thundershowers
-  3200 : "&#xf00c;" # not available
+  "rain": "&#xf019;"
+  "snow": "&#xf01b;"
+  "sleet": "&#xf019;"
+  "fog": "&#xf014;"
+  "wind": "&#xf021;"
+  "cloudy": "&#xf013;"
+  "partly-cloudy-night": "&#xf031;"
+  "partly-cloudy-day": "&#xf002;"
+  "clear-night": "&#xf02e;"
+  "clear-day": "&#xf00d;"
+  "" : "&#xf00c;" # not available
