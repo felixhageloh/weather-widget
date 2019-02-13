@@ -1,5 +1,13 @@
 // usage:
-// node get-weather.js [city] [region] [units]
+// node get-weather.js [city] [region] [units] [lang]
+
+// put your https://darksky.net/dev api key inside the quotes here
+var forecastApiKey = '';
+
+// put your https://ipstack.com/ api key inside the quotes here
+var geoipApiKey = '';
+
+
 // avoid HTTPS errors
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
 
@@ -11,16 +19,20 @@ var options = {
     city: process.argv[2],
     region: process.argv[3],
     units: process.argv[4].toLowerCase(),
-    static: process.argv[5] === 'static'
+    static: process.argv[5] === 'static',
+    lang: process.argv[6]
 };
 
 var weatherRetryCounter = 0;
 
 getLocation(function(location) {
     if (location.city) {
-        options.region = location.region;
+        options.region = location.region_name;
         options.city = location.city;
+        options.latitude = location.latitude;
+        options.longitude = location.longitude;
     }
+
     getWeather(options, function(data) {
         retryGetWeatherOrPrintResults(data);
     });
@@ -29,7 +41,14 @@ getLocation(function(location) {
 function getLocation(callback) {
     if (options.static) return callback({});
 
-    var request = getJSON("http://ip-api.com/json", callback);
+    var url = "http://api.ipstack.com/check";
+    var params = {
+        access_key : geoipApiKey,
+        language : "en",
+        output: "json"
+    };
+
+    var request = getJSON(url, params, callback);
 
     request.on('error', function() {
         callback({})
@@ -61,12 +80,14 @@ function retryGetWeatherOrPrintResults(data) {
 }
 
 function getWeather(options, callback) {
-    var url = "https://query.yahooapis.com/v1/public/yql";
+    var geo = options.latitude + "," + options.longitude;
+    var exclude  = "minutely,hourly,alerts,flags";
 
+    var url = "https://api.darksky.net/forecast/" + forecastApiKey + "/" + geo;
     var params = {
-        q: yqlQuery(options.city, options.region, options.units),
-        env: "store://datatables.org/alltableswithkeys",
-        format: 'json'
+        units : options.units,
+        lang: options.lang,
+        exclude: exclude
     };
 
     var request = getJSON(url, params, function(data) {
@@ -110,13 +131,4 @@ function getJSON(url, params, callback) {
             callback(result);
         });
     });
-}
-
-function yqlQuery(city, region, unit) {
-    city = city.replace(/\s+/g, '-');
-    region = region.replace(/\s+/g, '-');
-
-    return "select * from weather.forecast where woeid in " +
-        "(select woeid from geo.places(1) where text='" + city + ", " + region + "')" +
-        "and u='" + unit + "'";
 }
