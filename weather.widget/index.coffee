@@ -4,6 +4,8 @@ options =
   units         : 'us'              # si for celcius. us for Fahrenheit
   useLocation   : 'auto'            # set to 'static' to disable automatic location lookup
   lang          : 'en'              # set language code for the current day summary
+  geoipApiKey   : 'REPLACE_WITH_YOUR_API_KEY'  # https://ipstack.com/
+  weatherApiKey : 'REPLACE_WITH_YOUR_API_KEY'  # https://darksky.net/dev
 
 appearance =
   iconSet       : 'original'        # "original" for the original icons, or "yahoo" for yahoo icons
@@ -155,7 +157,9 @@ command: "#{process.argv[0]} weather.widget/get-weather \
                             \"#{options.region}\" \
                             #{options.units} \
                             #{options.useLocation}
-                            #{options.lang}"
+                            #{options.lang}
+                            #{options.geoipApiKey}
+                            #{options.weatherApiKey}"
 
 appearance: appearance
 
