@@ -155,9 +155,7 @@ command: "#{process.argv[0]} weather.widget/get-weather \
                             \"#{options.region}\" \
                             #{options.units} \
                             #{options.useLocation}
-                            #{options.lang}
-                            #{options.geoipApiKey}
-                            #{options.weatherApiKey}"
+                            #{options.lang}"
 
 appearance: appearance
 
