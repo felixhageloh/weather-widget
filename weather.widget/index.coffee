@@ -25,7 +25,7 @@ style: """
   width: #{appearance.baseFontSize * 8.57}px
 
   font-family: Helvetica Neue
-  color      : #{appearance.color}
+  color      : #888
   text-align : center
 
   .current .temperature
@@ -168,7 +168,7 @@ render: -> """
               #{ 'no-location' unless @appearance.showLocation }
               #{ 'no-day' unless @appearance.showDay }
               #{ 'no-weather-text' unless @appearance.showWeatherText }
-  '>
+  ' style='color: #{appearance.color}'>
     <div class='icon'></div>
     <div class='details'>
       <div class='today'>
@@ -181,7 +181,7 @@ render: -> """
       </div>
     </div>
   </div>
-  <div class="forecast" #{ 'style="display:none; border-top: 0"' unless @appearance.showForecast }></div>
+  <div class="forecast" #{ 'style="display:none; border-top: 0"' unless @appearance.showForecast } style='color: #{appearance.color}'></div>
 """
 
 update: (output, domEl) ->
