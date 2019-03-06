@@ -1,11 +1,14 @@
 options =
-  city          : "Troy"       # default city in case location detection fails
-  region        : "NY"              # default region in case location detection fails
-  units         : 'us'              # si for celcius. us for Fahrenheit
-  useLocation   : 'auto'            # set to 'static' to disable automatic location lookup
+  city          : 'Melbourne'       # default city in case location detection fails
+  region        : 'Victoria'        # default region in case location detection fails
+  # latitude      : '-37.784559'      # default latitude in case location detection fails
+  # longitude     : '144.972855'      # default longitude in case location detection fails
+  units         : 'si'              # si for celcius. us for Fahrenheit
   lang          : 'en'              # set language code for the current day summary
-  geoipApiKey   : 'REPLACE_WITH_YOUR_API_KEY'  # https://ipstack.com/
-  weatherApiKey : 'REPLACE_WITH_YOUR_API_KEY'  # https://darksky.net/dev
+  useLocation   : 'auto'            # set to 'static' to disable automatic location lookup
+  geoipApiKey   : '$(security find-generic-password -a ubersicht -s ipstack -w)'  # https://ipstack.com/
+  geolocationApiKey : '$(security find-generic-password -a ubersicht -s OpenCageData -w)'  # https://darksky.net/dev
+  weatherApiKey : '$(security find-generic-password -a ubersicht -s DarkSkyWeather -w)'  # https://darksky.net/dev
 
 appearance =
   iconSet       : 'original'        # "original" for the original icons, or "yahoo" for yahoo icons
@@ -20,8 +23,8 @@ appearance =
 refreshFrequency: 600000            # Update every 10 minutes
 
 style: """
-  top  : 10px
-  right : 150px
+  bottom : 20px
+  right : 300px
   width: #{appearance.baseFontSize * 8.57}px
 
   font-family: Helvetica Neue
@@ -156,9 +159,10 @@ command: "#{process.argv[0]} weather.widget/get-weather \
                             \"#{options.city}\" \
                             \"#{options.region}\" \
                             #{options.units} \
-                            #{options.useLocation}
-                            #{options.lang}
-                            #{options.geoipApiKey}
+                            #{options.lang} \
+                            #{options.useLocation} \
+                            #{options.geoipApiKey} \
+                            #{options.geolocationApiKey} \
                             #{options.weatherApiKey}"
 
 appearance: appearance
@@ -185,6 +189,7 @@ render: -> """
 """
 
 update: (output, domEl) ->
+
   @$domEl = $(domEl)
 
   channel = JSON.parse(output)
