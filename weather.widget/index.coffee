@@ -1,8 +1,6 @@
 options =
   city          : 'Melbourne'       # default city in case location detection fails
   region        : 'Victoria'        # default region in case location detection fails
-  # latitude      : '-37.784559'      # default latitude in case location detection fails
-  # longitude     : '144.972855'      # default longitude in case location detection fails
   units         : 'si'              # si for celcius. us for Fahrenheit
   lang          : 'en'              # set language code for the current day summary
   useLocation   : 'auto'            # set to 'static' to disable automatic location lookup
@@ -20,7 +18,7 @@ appearance =
   showWeatherText: true             # set to true to show the text label for the weather
   showForecast  : true              # set to true to show the 5 day forecast
 
-refreshFrequency: 600000            # Update every 10 minutes
+refreshFrequency: 1800000            # Update every 30 minutes
 
 style: """
   bottom : 20px

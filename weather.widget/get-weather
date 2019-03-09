@@ -1,8 +1,6 @@
 // usage:
 // node get-weather.js [city] [region] [units] [lang] [static] [geoipApiKey] [geolocationApiKey] [forecastApiKey]
 
-// process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
-
 const query = require('querystring');
 
 const OPTIONS = {
@@ -17,18 +15,28 @@ const OPTIONS = {
 };
 
 const GEOIP_API = {
-  schemehostpath: 'http://api.ipstack.com/check',
-  params: {
-    access_key: OPTIONS.geoipApiKey,
-    language: 'en',
-    output: 'json',
-  },
-  transform: data => {
-    // {"ip":"50.242.117.125","type":"ipv4","continent_code":"NA","continent_name":"North America","country_code":"US","country_name":"United States","region_code":"CA","region_name":"California","city":"Union City","zip":"94587","latitude":37.589,"longitude":-122.0461,"location":{"geoname_id":5404555,"capital":"Washington D.C.","languages":[{"code":"en","name":"English","native":"English"}],"country_flag":"http:\/\/assets.ipstack.com\/flags\/us.svg","country_flag_emoji":"\ud83c\uddfa\ud83c\uddf8","country_flag_emoji_unicode":"U+1F1FA U+1F1F8","calling_code":"1","is_eu":false}}
-    const { city, region_name: region, location: { languages: [{ code: lang }] }, latitude, longitude } = JSON.parse(data);
-    return { city, region, lang, latitude, longitude };
+  schemehostpath: 'http://ip-api.com/json/',
+  params: {},
+  transform: (data) => {
+    // {..."city":"Berkeley",...,"lat":37.8664,"lon":-122.257,...,"regionName":"California",...}
+    const { city, region, lat: latitude, lon: longitude } = JSON.parse(data);
+    return { city, region, lang: 'en', latitude, longitude };
   },
 };
+
+// const GEOIP_API = {
+//   schemehostpath: 'http://api.ipstack.com/check',
+//   params: {
+//     access_key: OPTIONS.geoipApiKey,
+//     language: 'en',
+//     output: 'json',
+//   },
+//   transform: data => {
+//     // {"ip":"50.242.117.125",...,"region_name":"California","city":"Union City",...,"latitude":37.589,"longitude":-122.0461,"location":{...,"languages":[{"code":"en",...}]...}}
+//     const { city, region_name: region, location: { languages: [{ code: lang }] }, latitude, longitude } = JSON.parse(data);
+//     return { city, region, lang, latitude, longitude };
+//   },
+// };
 
 const GEOLOCATION_API = {
   schemehostpath: 'https://api.opencagedata.com/geocode/v1/json',
@@ -37,7 +45,7 @@ const GEOLOCATION_API = {
     key: OPTIONS.geolocationApiKey,
   },
   transform: data => {
-    // {"documentation":"https://opencagedata.com/api",...,"results":[{"annotations":{...},...,"formatted":"Carlton North VIC 3054, Australia","geometry":{"lat":-37.7845585,"lng":144.9728553}},...],"status":{"code":200,"message":"OK"},...,"thanks":"For using an OpenCage Data API","timestamp":{"created_http":"Wed, 06 Mar 2019 04:03:45 GMT","created_unix":1551845025},"total_results":2}
+    // {"documentation":"https://opencagedata.com/api",...,"results":[{...,"geometry":{"lat":-37.7845585,"lng":144.9728553}},...],...,"thanks":"For using an OpenCage Data API",...}
     const { results: [{ geometry: { lat: latitude, lng: longitude } }] } = JSON.parse(data);
     const { city, region } = OPTIONS;
     return { city, region, lang: 'en', latitude, longitude };
@@ -51,6 +59,10 @@ const WEATHER_API = {
     lang: OPTIONS.lang,
     exclude: 'minutely,hourly,alerts,flags',
   },
+  transform: (data, city, region) => {
+    // {..,"currently":{"time":1551856440,"summary":"Overcast","icon":"cloudy",...},"daily":{...},"offset":-5}
+    return { ...(JSON.parse(data)), location: `${city}, ${region}` };
+  }
 };
 
 const get = ({ schemehostpath, params }) => {
@@ -64,8 +76,8 @@ const get = ({ schemehostpath, params }) => {
       response.on('data', chunk => body += chunk);
       response.on('end', () => {
         if (response.statusCode < 200 || response.statusCode > 299) {
-          reject(new Error(`Request failed: ${response.statusCode} ${response.statusMessage}
-${body}`));
+          reject(new Error((`Request failed: ${response.statusCode} ${response.statusMessage}
+                            ${body}`).replace(/^ {2,}/gm,'')));
         }
         else resolve(body);
       })
@@ -82,8 +94,7 @@ const getWeather = async ({ city, region, lang, latitude, longitude }) => {
   const { schemehostpath, params } = WEATHER_API;
   const data = await get({ schemehostpath: `${schemehostpath}${latitude},${longitude}`, params });
 
-  // {..,"currently":{"time":1551856440,"summary":"Overcast","icon":"cloudy",...},"daily":{...},"offset":-5}
-  return { ...(JSON.parse(data)), location: `${city}, ${region}` };
+  return WEATHER_API.transform(data, city, region)
 };
 
 const printResults = jsonData => console.log(JSON.stringify(jsonData));
