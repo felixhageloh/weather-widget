@@ -58,12 +58,7 @@ function printResults(data) {
 }
 
 function retryGetWeatherOrPrintResults(data) {
-    var results = null;
-    try {
-        results = data.query.results;
-    } catch (ignore) { }
-
-    if (results == null && weatherRetryCounter < 5) {
+    if (data == null && weatherRetryCounter < 5) {
         weatherRetryCounter++;
         getWeather(options, function(data) {
             retryGetWeatherOrPrintResults(data);
