@@ -21,7 +21,7 @@ You can find all options `index.coffee` at the top of the file:
 
 2. Temperature units. Use 'us' for Fahrenheit and 'si' for Celsius.
 
-3. Automatic location lookup. Set `useLocation` to `static` to disable auto location and instead always use the default city and region.
+3. Automatic location lookup. Set `useLocation` to `static` to disable auto location and instead use specified coordinates with `staticCoords`.
 
 ## Appearance
 
