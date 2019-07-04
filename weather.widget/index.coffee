@@ -1,9 +1,10 @@
 options =
-  city          : "Troy"       # default city in case location detection fails
-  region        : "NY"              # default region in case location detection fails
-  units         : 'us'              # si for celcius. us for Fahrenheit
-  useLocation   : 'auto'            # set to 'static' to disable automatic location lookup
-  lang          : 'en'              # set language code for the current day summary
+  city          : 'Troy'              # default city in case location detection fails
+  region        : 'NY'                # default region in case location detection fails
+  units         : 'us'                # si for celcius. us for Fahrenheit
+  useLocation   : 'auto'              # set to 'static' to disable automatic location lookup, 'auto' otherwise
+  staticCoords  : '42.7284,-73.6918'  # if automatic location lookup is disabled, coordinates to use instead
+  lang          : 'en'                # set language code for the current day summary
   geoipApiKey   : 'REPLACE_WITH_YOUR_API_KEY'  # https://ipstack.com/
   weatherApiKey : 'REPLACE_WITH_YOUR_API_KEY'  # https://darksky.net/dev
 
@@ -157,6 +158,7 @@ command: "#{process.argv[0]} weather.widget/get-weather \
                             \"#{options.region}\" \
                             #{options.units} \
                             #{options.useLocation}
+                            #{options.staticCoords}
                             #{options.lang}
                             #{options.geoipApiKey}
                             #{options.weatherApiKey}"
