@@ -2,33 +2,26 @@
 
 Made for [Übersicht](http://tracesof.net/uebersicht/)
 
-Uses the [freegeoip.net](http://freegeoip.net/ "freegeoip.net") api to obtain your location, and the [Yahoo Weather api](https://developer.yahoo.com/weather// "Yahoo Weather api") to obtain the weather information.
-
-## In Action
-
-### Original Icons
-![Original Icons]
-(https://raw.githubusercontent.com/felixhageloh/weather-widget/master/originalIcons.png)
-
-### Yahoo Icons
-![Yahoo Icons]
-(https://raw.githubusercontent.com/felixhageloh/weather-widget/master/yahooIcons.png)
+Uses the [positionstack.com](https://positionstack.com/documentation), [ipstack.com](https://ipstack.com/documentation) to obtain your location, and the [OpenWeather API](https://home.openweathermap.org/users/sign_up) to obtain the weather information.
+All APIs require registration to get an API key, so please configure those in the `index.coffe` script.
 
 ## Options
 
 You can find all options `index.coffee` at the top of the file:
 
-1. Default city and region. You can replace `<city>` with your city, and `<region>` with your region (state). This location is used in case the automatic location lookup fails, or if you switch off auto location (see below). Example:
+1. Default city and region. Set `city` and `region` if you switch off `auto` location (see below). Example:
 
     ```
     options =
-      city  : 'Cupertino'
-      region: 'CA'
+      city    : 'Cupertino'
+      region  : 'CA'
     ```
 
-2. Temperature units. Use 'f' for Fahrenheit and 'c' for Celsius.
+2. Temperature `units`. Use `imperial` for Fahrenheit and `metric` for Celsius.
 
-3. Automatic location lookup. Set `staticLocation` to `true` to disable auto location and instead always use the default city and region.
+3. Automatic location lookup. Set `useLocation` to `static` to disable auto location and instead always use the default city and region.
+
+4. API keys `posApiKey`, `geoipApiKey` and `weatherApiKey` are required to obtain responses from the PositionStack, IpStack and OpenWeather APIs.
 
 ## Appearance
 
@@ -39,6 +32,9 @@ To tweak the appearance, just follow the directions inside `index.coffee`. You c
 Automatic location detection and switch to Yahoo api by @nickroberts
 https://github.com/nickroberts
 
-Icons by Erik Flowers
+Ported to Dark Sky and ipstack API after Yahoo retired their API
+https://github.com/Titousensei
+
+Original icons by Erik Flowers
 http://erikflowers.github.io/weather-icons/
 

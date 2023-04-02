@@ -1,7 +1,7 @@
 // usage:
-// node get-weather.js [city] [region] [units] [lang] [geoipkey] [weatherapikey]
+// node get-weather [city] [region] [units] [lang] [posapikey] [geoipapikey] [weatherapikey]
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = 0;
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = 1;
 
 var http = require('http'),
     https = require('https'),
@@ -13,40 +13,64 @@ var options = {
     units: process.argv[4].toLowerCase(),
     static: process.argv[5] === 'static',
     lang: process.argv[6],
-    geoipApiKey: process.argv[7],
-    forecastApiKey: process.argv[8]
+    posApiKey: process.argv[7],
+    geoipApiKey: process.argv[8],
+    weatherApiKey: process.argv[9]
 };
 
 var weatherRetryCounter = 0;
 
-getLocation(function(location) {
-    if (location.city) {
-        options.region = location.region_name;
-        options.city = location.city;
-        options.latitude = location.latitude;
-        options.longitude = location.longitude;
+getPosition(function(position) {
+    if (position.data
+            && position.data.length > 0) {
+        var pos = position.data[0];
+        options.latitude = pos.latitude;
+        options.longitude = pos.longitude;
     }
 
-    getWeather(options, function(data) {
-        retryGetWeatherOrPrintResults(data);
+    getLocation(function(location) {
+        if (location.city) {
+            options.region = location.region_name;
+            options.city = location.city;
+            options.latitude = location.latitude;
+            options.longitude = location.longitude;
+        }
+
+        getWeather(options, function(data) {
+            retryGetWeatherOrPrintResults(data);
+        });
     });
 });
 
-function getLocation(callback) {
-    if (options.static) return callback({});
+function getPosition(callback) {
+    if (!options.static) return callback({data:[]});
 
-    var url = "http://api.ipstack.com/check";
+    var url = 'http://api.positionstack.com/v1/forward';
     var params = {
-        access_key : options.geoipApiKey,
-        language : "en",
-        output: "json"
+        query: options.city + ',' + options.region,
+        access_key: options.posApiKey,
+        output: 'json'
     };
 
     var request = getJSON(url, params, callback);
 
-    request.on('error', function() {
-        callback({})
-    });
+    setTimeout(function(){
+        request.abort();
+    }, 3000)
+}
+
+function getLocation(callback) {
+    if (options.static) return callback({});
+
+    var url = 'http://api.ipstack.com/check';
+    var params = {
+        access_key: options.geoipApiKey,
+        language: 'en',
+        output: 'json'
+    };
+
+    var request = getJSON(url, params, callback);
+
     setTimeout(function() {
         request.abort();
     }, 3000);
@@ -74,24 +98,17 @@ function retryGetWeatherOrPrintResults(data) {
 }
 
 function getWeather(options, callback) {
-    var geo = options.latitude + "," + options.longitude;
-    var exclude  = "minutely,hourly,alerts,flags";
-
-    var url = "https://api.darksky.net/forecast/" + options.forecastApiKey + "/" + geo;
+    var url = 'https://api.openweathermap.org/data/2.5/onecall';
     var params = {
-        units : options.units,
-        lang: options.lang,
-        exclude: exclude
+        appid: options.weatherApiKey,
+        lat: options.latitude,
+        lon: options.longitude,
+        units: options.units,
+        lang: options.lang
     };
 
-    var request = getJSON(url, params, function(data) {
+    getJSON(url, params, function(data) {
         callback(data);
-    });
-
-    request.on('error', function(e) {
-        callback({
-            error: e.message
-        });
     });
 }
 
@@ -107,7 +124,7 @@ function getJSON(url, params, callback) {
     if (querystring)
         url = url + '?' + querystring;
 
-    var json = "",
+    var json = '',
         result;
 
     return protocol.get(url, function(res) {
@@ -124,5 +141,10 @@ function getJSON(url, params, callback) {
             }
             callback(result);
         });
+        res.on('error', function(e){
+            callback({
+                error: e.message
+            });
+        })
     });
 }
